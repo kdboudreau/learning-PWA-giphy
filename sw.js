@@ -70,6 +70,19 @@ const fallbackCache = (req) => {
     .catch(err => caches.match(req));
 }
 
+// Clean old Giphys from the 'giphy' cache
+const cleanGiphyCache = (giphys) => {
+    caches.open('giphy').then(cache => {
+        // Get all cache entries
+        cache.keys().then(keys => {
+            // Loop entries
+            keys.forEach(key => {
+                // If entry is not part of current Giphys, delete
+                if (!giphys.includes(key.url)) cache.delete(key);
+            })
+        })
+    })
+}
 
 // SW fetch
 self.addEventListener('fetch', e => {
@@ -80,4 +93,10 @@ self.addEventListener('fetch', e => {
     } else if (e.request.url.match('giphy.com/media')) { // Giphy media 
         e.respondWith(staticCache(e.request, 'giphy'))
     }
+});
+
+// Listen for message from client
+self.addEventListener('message', e => {
+    // Identify the message
+    if (e.data.action === 'cleanGiphyCache') cleanGiphyCache(e.data.giphys);
 });
